@@ -26,23 +26,21 @@ def show_exam_result(request, course_id, submission_id):
     course = get_object_or_404(Course, pk=course_id)
     submission = get_object_or_404(Submission, pk=submission_id)
     
-    total_questions = course.question_set.count()
-    correct_answers = 0
+    selected_ids = [choice.id for choice in submission.choices.all()]
+    total_score = 0
+    possible_score = 0
     
     for question in course.question_set.all():
-        selected_choices = submission.choices.filter(question=question)
-        correct_choices = question.choice_set.filter(is_correct=True)
-        
-        if set(selected_choices) == set(correct_choices):
-            correct_answers += 1
+        possible_score += question.grade
+        if question.is_get_score(selected_ids):
+            total_score += question.grade
             
-    score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
-    passed = score >= 80
+    grade = (total_score / possible_score) * 100 if possible_score > 0 else 0
     
     context = {
         'course': course,
-        'score': score,
-        'passed': passed,
+        'grade': grade,
+        'selected_ids': selected_ids,
         'submission': submission,
     }
     return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
